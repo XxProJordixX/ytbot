@@ -1,1 +1,1 @@
-eyzalts: node blitzbot.js
+eyzalts: node BlitzBot.js
