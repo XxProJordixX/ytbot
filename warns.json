@@ -1,0 +1,44 @@
+const Discord = require("discord.js")
+const fs = require('fs')
+const client = new Discord.Client()
+
+let prefix = "--"
+
+const warns = JSON.parse(fs.readFileSync('./warns.json'))
+
+client.login(require("./token.json"))
+
+client.on("message", message => {
+    if (!message.guild) return
+    let args = message.content.trim().split(/ +/g)
+
+    if (args[0].toLowerCase() === prefix + "warn") {
+        if (!message.member.hasPermission('MANAGE_MESSAGES')) return message.channel.send("No Tienes Permissos Para Este Commando")
+        let member = message.mentions.members.first()
+        if (!member) return message.channel.send("Debes Mencionar Un Miembro")
+        if (member.highestRole.comparePositionTo(message.member.highestRole) < 1 && message.author.id !== message.guild.ownerID) return message.channel.send("Vous ne pouvez pas warn ce membre")
+        let reason = args.slice(2).join(' ')
+        if (!reason) return message.channel.send("Tienes Qué Añadir Una Razón")
+        if (!warns[member.id]) {
+            warns[member.id] = []
+        }
+        warns[member.id].unshift({
+            reason: reason,
+            date: Date.now(),
+            mod: message.author.id
+        })
+        fs.writeFileSync('./warns.json', JSON.stringify(warns))
+        message.channel.send(member + " a été warn pour " + reason + " :white_check_mark:")
+    }
+
+    if (args[0].toLowerCase() === prefix + "infractions") {
+        if (!message.member.hasPermission('MANAGE_MESSAGES')) return message.channel.send("No Tienes Perrmisos Para Utilizar Este Commando")
+        let member = message.mentions.members.first()
+        if (!member) return message.channel.send("Debes Mencionar A Un miembro")
+        let embed = new Discord.RichEmbed()
+            .setAuthor(member.user.username, member.user.displayAvatarURL)
+            .addField('10 derniers warns', ((warns[member.id]) ? warns[member.id].slice(0, 10).map(e => e.reason) : "Este Miembro No Ha Sido Advertido"))
+            .setTimestamp()
+        message.channel.send(embed)
+    }
+})
